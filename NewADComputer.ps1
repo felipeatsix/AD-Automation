@@ -31,6 +31,7 @@ New-ADComputer -Name $Computername -Path "$DefaultOuPath"
 Write-host "
 A new Active Directory computer has been created:`n
 Hostname: $Computername"
+Location: $Location,$DomainDn" -ForegroundColor Cyan
 
 }#end function
 
