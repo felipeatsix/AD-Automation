@@ -28,9 +28,9 @@ $MiddleName = $($MiddleName.ToLower())
 $SecondMiddleName = $($SecondMiddleName.ToLower())
 $LastName = $($LastName.ToLower())
 
+$DomainDn = (Get-ADDomain).DistinguishedName
 $Location = 'OU=Domain Users,OU=ITFLEE'
 $DefaultPassword = 'p@ssw0rd'
-$DomainDn = (Get-ADDomain).DistinguishedName
 $DefaultGroup = 'ITFLEE Users'
 
 
