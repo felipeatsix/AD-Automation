@@ -73,12 +73,12 @@ $NewUserParams = @{
 
 New-ADUser @NewUserParams 
 
-#Add new user to default group and specific group-----------------------------------------------------------------
+#Add new user to default group and specific group------------------------------------------------------------------
 
 Add-ADGroupMember -Identity $DefaultGroup -Members $username
 Add-ADGroupMember -Identity $Group -Members $username
 
-#Show Results----------------------------------------------------------------------------------------------------------
+#Show Results------------------------------------------------------------------------------------------------------
 
 Write-Host "
 A new Active Directory user account has been created:`n
