@@ -18,7 +18,6 @@ try{
 $computer | Set-ADComputer @Attributes
 
 <# 
-
    Example of use: 
 
    cd [script location]
@@ -32,6 +31,4 @@ $computer | Set-ADComputer @Attributes
    
    cd [script location]
    .\Set-MyADcomputer.ps1 -computername VM01 -Attributes @{description = 'Lab - Virtual Machine'; displayname = 'VM01'}
-
-
 #>
