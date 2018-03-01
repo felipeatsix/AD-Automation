@@ -1,6 +1,6 @@
 # ActiveDirectory_Scritps
 
-Some of my Powershell scripts for managing Active Directory Domain Services.
+My Powershell scripts for automating some of Active Directory Domain Services tasks.
 
 I've learned these scripts mostly from PluralSight Powershell Advanced courses which I highly recommend everyone who is interested in learning Powershell.
 
