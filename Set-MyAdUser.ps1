@@ -1,7 +1,7 @@
-  param(
-    [string]$username,
-    [hashtable]$attributes
-    )
+param(
+[string]$username,
+[hashtable]$attributes
+)
 
 # Attempt to find the username
 Try{
@@ -11,7 +11,6 @@ Try{
      return
    }
 } catch{}
-
 
 # The $attributes parameter will contain only the parameters for the Set-AdUser cmdlet other than
 # Password. If this is in $attributes it needs to be threated differentely. 
