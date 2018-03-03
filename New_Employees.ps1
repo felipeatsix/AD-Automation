@@ -5,7 +5,7 @@ function NewADUser {
        tasks that must be done when onboarding a new employee user account.
   
   .Example
-      PS> NewADUser -firstname 'Felipe' -MiddleName 'Matheus' -SecondMiddleName 'Souza' -LastName 'Santos' -Title 'Powershell Scripter' -Group 'Powershell Guys'
+      PS> NewADUser -firstname 'Felipe' -MiddleName 'Souza' -LastName 'Santos' -Title 'Powershell Scripter' -Group 'Powershell Guys'
 
       This example creates an AD username based on company standards into a company-standard OU and adds the user
       into the company-standard main user group.
