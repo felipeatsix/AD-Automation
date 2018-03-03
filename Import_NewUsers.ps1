@@ -1,7 +1,7 @@
 # . 'path\to\New_Employee.ps1' 
 # $Employees = Import-CSV -Path 'path\to\csv_file.csv'
 
-# Don't forget to erase the '#' in the lines above after editing the paths.
+# Don't forget to delete the '#' in the lines above after editing the paths.
 
 foreach($Employee in $Employees){
     try {
