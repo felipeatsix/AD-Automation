@@ -3,15 +3,31 @@ function NewADUser {
   .SYNOPSIS
        This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
        tasks that must be done when onboarding a new employee user account.
-  
-  .Example
+        
+  .EXAMPLE
       PS> NewADUser -firstname 'Felipe' -MiddleName 'Souza' -LastName 'Santos' -Title 'Powershell Scripter' -Group 'Powershell Guys'
 
       This example creates an AD username based on company standards into a company-standard OU and adds the user
-      into the company-standard main user group.
+      into the company-standard main user group.      
       
-      Note: Only the parameters FirstName, LastName and Title are mandatory.
-            The -Group parameter adds the user to a specific group.
+      Notes: 
+        -MiddleName and -Group parameters are not mandatory.
+         Use the -Group parameter only to add the user to a specific domain group. 
+  
+  .PARAMETER FirstName
+       Set the user's First Name.
+  
+  .PARAMETER MiddleName
+       Set the user's Middle Name.
+  
+  .PARAMETER LastName
+       Set the user's Last Name.
+  
+  .PARAMETER Title
+       Set the user's Title.
+  
+  .PARAMETER Group 
+       Adds the user to a specific domain group.            
 #> 
 
 #Parameters------------------------------------------------------------------------------------------------------- 
@@ -31,15 +47,16 @@ function NewADUser {
     $Group   
 )
 
-process {  
-$MiddleInitial = $($MiddleName.Substring(0, 1))
+process {
 
 #Constant Parameters----------------------------------------------------------------------------------------------
 
+if($MiddleName){
+   $MiddleInitial = ".$($MiddleName.Substring(0, 1).Tolower())"
+}
 $FirstName = $($FirstName.ToLower())
-$MiddleInitial = $($MiddleInitial.ToLower())
 $LastName = $($LastName.ToLower())
-
+  
 $DomainDn = (Get-ADDomain).DistinguishedName
 $Location = 'OU=Domain Users,OU=ITFLEE'
 $DefaultPassword = 'p@ssw0rd'
@@ -48,19 +65,21 @@ $DefaultGroup = 'ITFLEE Users'
 
 #Test username availability---------------------------------------------------------------------------------------
 
-$username = "$firstName$lastName"
+$username = "$firstName.$lastName"
 
 try {
-      if (Get-ADUser $username){
+      if (Get-ADUser -filter * | ? {$_.name -eq $username}){
       $username = "$($FirstName.substring(0,1))$MiddleInitial$LastName"
     
-        if (Get-ADUser $username){
+        if (Get-ADUser -filter * | ? {$_.name -eq $username}){
         Write-Warning "No acceptable username schema could be created!"
         return     
         }  
       }
     }  
-       catch {}        
+       catch {
+         Write-Error "$($_.Execption.Message) - Line Number : $($_.InvocationInfo.ScriptLineNumber)"
+       }        
 
 #Set new user parameters and create it----------------------------------------------------------------------------
 
@@ -74,10 +93,15 @@ $NewUserParams = @{
     'SamAccountName'        = $username
     'AccountPassword'       = (ConvertTo-SecureString $DefaultPassword -AsPlainText -force)
     'Enabled'               = $true
-    'Initials'              = $MiddleInitial
     'Path'                  = "$location,$DomainDn"
-    'ChangePassWordAtLogon' = $true
+    'ChangePassWordAtLogon' = $true  
 }
+
+#If user has a middle name, then add the middle initial name to the parameter 'Initials'.
+
+    if($MiddleInitial){
+     $NewUserParams += @{'Initials' = $MiddleInitial}
+    }
 
 New-ADUser @NewUserParams 
 
@@ -85,13 +109,15 @@ New-ADUser @NewUserParams
 
 Add-ADGroupMember -Identity $DefaultGroup -Members $username
 
-  try{
-    Add-ADGroupMember -Identity $Group -Members $username 
-  }
-    catch{
-    Write-Error "The group $group does not exist."
+  if($group -ne $null){
+    try{
+      Add-ADGroupMember -Identity $Group -Members $username 
     }
-
+      catch{
+      Write-Error "The group $group does not exist."
+      }
+  }
+    
 #Show Results-----------------------------------------------------------------------------------------------------
 
 Write-Host "
@@ -99,15 +125,14 @@ A new Active Directory user account has been created:`n
 Username = $username
 Name = $FirstName
 Middle Name = $MiddleName
-Last Name= $LastName
+Last Name = $LastName
 Title = $Title
 Default Group = $DefaultGroup
-Department Group = $Group
+Specific Group = $Group
 Location = $Location,$DomainDn" -ForegroundColor Cyan 
 $username  
  }
 }
-
 
 function newADComputer {
 <#
@@ -205,7 +230,7 @@ function Set-MyAdUser {
       NOTE: The 'keys' are the Set-ADUser cmdlet parameters, you can use intellisense to discover all parameters of this cmdlet. 
 
    Example2:
-      Set-MyAdUser -username [username] -attributes @{GivanName = 'Tony'; Surname = 'Stark'; Initials = 'TS'}
+      Set-MyAdUser -username [username] -attributes @{GivenName = 'Tony'; Surname = 'Stark'; Initials = 'TS'}
 #>    
     
     [cmdletbinding()]
