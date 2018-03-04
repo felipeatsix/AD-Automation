@@ -1,23 +1,27 @@
 # . 'path\to\New_EmployeesAutomator.ps1' 
 # $Employees = Import-CSV -Path 'path\to\csv_file.csv'
-
 # Don't forget to delete the '#' in the lines above after editing the paths.
 
-foreach($Employee in $Employees){
-    try {
+$Employees = Import-CSV -Path 'C:\users\Administrator\Documents\Powershell Scripts\new_employees.csv'
+  foreach($Employee in $Employees){
+    
+  try {
     # Create the AD user accounts
-    $NewUserParams = @{
-        'FirstName' = $Employee.FirstName
-        'MiddleName' = $Employee.MiddleName        
-        'LastName' = $Employee.LastName
-        'Title' = $Employee.Title
-        'Group' = $Employee.Group
+    $NewUserParams   = @{
+        'FirstName'  = $Employee.FirstName        
+        'LastName'   = $Employee.LastName
+        'Title'      = $Employee.Title        
     }
-    if($Employee.Location){
-       $NewUserParams.Location = $Employee.Location
+
+    if($Employee.MiddleName){
+       $NewUserParams.MiddleName = $Employee.MiddleName
     }
-    # Grab the username created to use for Set-MyAdUser
-    $username = NewADUser @NewUserParams
+      if($Employee.Group){
+         $NewUserParams.Group = $Employee.Group
+      }
+
+    # Grab the username created to use for Set-MyAdUser    
+      $username = NewADUser @NewUserParams
 
     # Create the employee's AD computer account
     NewADcomputer -computername $Employee.ComputerName
