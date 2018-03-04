@@ -1,4 +1,4 @@
-# . 'path\to\New_Employee.ps1' 
+# . 'path\to\New_EmployeesAutomator.ps1' 
 # $Employees = Import-CSV -Path 'path\to\csv_file.csv'
 
 # Don't forget to delete the '#' in the lines above after editing the paths.
