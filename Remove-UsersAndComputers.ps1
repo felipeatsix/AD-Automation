@@ -22,7 +22,7 @@ $Employees = Import-CSV -Path 'C:\users\Administrator\Documents\Powershell Scrip
         }        
 
 # Get the computer's description (which must be configured with the name of the username) and compare it with the username.
-# if it does not match, throw error message, it it does, warn that computer account will be removed.
+# if it does not match, throw error message, if it does, warn that computer account will be removed.
    
 $computer = Get-ADComputer $($Employee.ComputerName) -Properties description             
   
