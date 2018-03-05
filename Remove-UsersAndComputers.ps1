@@ -7,7 +7,7 @@ function Remove-UsersAndComputers {
       Path to CSV file.
   
   .EXAMPLE
-      Remove-UsersAndComputers -CsvFile c:\script.ps1  
+      Remove-UsersAndComputers -CsvFile c:\RemoveEmployees.csv 
   
   .Notes
       The script will expect that CSV file contains domain usernames (not the employees names) and domain computer names.
