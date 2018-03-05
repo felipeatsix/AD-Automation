@@ -1,20 +1,35 @@
+function Remove-UsersAndComputers {
+  <#
+  .SYNOPSIS
+      Delete domain users and computers listed in a CSV file.
+  
+  .PARAMETER CsvFile
+      Path to CSV file.
+  
+  .EXAMPLE
+      Remove-UsersAndComputers -CsvFile c:\script.ps1  
+  
+  .Notes
+      The script will expect that CSV file contains domain usernames (not the employees names) and domain computer names.
+      Also, the script will expect that domain computers descriptions contains the name of the username, then validate it before removing it. 
+  #>
 # Import CSV file data to $Employess
-$Employees = Import-CSV -Path 'C:\users\Administrator\Documents\Powershell Scripts\remove_employees.csv'
+[cmdletbinding()]
+  param($CsvFile)
+  $Employees = Import-CSV -Path $CsvFile
 
 # For each loop, pass the attributes of each employee to $UserParam and $ComputerParam 
-  foreach($Employee in $Employees){
-      
+  foreach($Employee in $Employees){      
       $UserParam = @{
            'Identity' = $Employee.Username
       }
       $ComputerParam = @{
            'Identity' = $Employee.ComputerName
       }  
-
-# Try to find the username, if it does not exist throw the error message, instead, warn that username will be removed.
+# Try to find the username, if it doesn't exist throw the error message, instead, warn that username will be removed.
       try{    
         if(!(Get-ADUser -Filter 'SamAccountName -eq "$($Employee.UserName)"')){
-             Write-Error "Username $($Employee.UserName) does not exist"
+             Write-Error "Username $($Employee.UserName) doesn't exist"
              return         
         }
         else{
@@ -23,8 +38,8 @@ $Employees = Import-CSV -Path 'C:\users\Administrator\Documents\Powershell Scrip
 
 # Get the computer's description (which must be configured with the name of the username) and compare it with the username.
 # if it does not match, throw error message, if it does, warn that computer account will be removed.
-   
-        $computer = Get-ADComputer -filter 'name "$($Employee.ComputerName)"' -Properties description             
+
+$computer = Get-ADComputer -filter 'name "$($Employee.ComputerName)"' -Properties description             
   
   if($computer.description -match $Employee.UserName){
      Write-Warning "The computer $($Employee.ComputerName) matches with $($Employee.Username) and will be removed!`n"
@@ -44,4 +59,5 @@ $Employees = Import-CSV -Path 'C:\users\Administrator\Documents\Powershell Scrip
      
    Remove-ADUser @UserParam  # -confirm
    Remove-ADComputer @ComputerParam # -confirm    
+ }
 }
