@@ -13,7 +13,7 @@ $Employees = Import-CSV -Path 'C:\users\Administrator\Documents\Powershell Scrip
 
 # Try to find the username, if it does not exist throw the error message, instead, warn that username will be removed.
       try{    
-        if(!(Get-ADUser -Filter * | ? {$_.name -eq "$Employee.UserName"})){
+        if(!(Get-ADUser -Filter 'SamAccountName -eq "$($Employee.UserName)"')){
              Write-Error "Username $($Employee.UserName) does not exist"
              return         
         }
@@ -24,7 +24,7 @@ $Employees = Import-CSV -Path 'C:\users\Administrator\Documents\Powershell Scrip
 # Get the computer's description (which must be configured with the name of the username) and compare it with the username.
 # if it does not match, throw error message, if it does, warn that computer account will be removed.
    
-$computer = Get-ADComputer $($Employee.ComputerName) -Properties description             
+        $computer = Get-ADComputer -filter 'name "$($Employee.ComputerName)"' -Properties description             
   
   if($computer.description -match $Employee.UserName){
      Write-Warning "The computer $($Employee.ComputerName) matches with $($Employee.Username) and will be removed!`n"
