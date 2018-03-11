@@ -23,8 +23,8 @@ Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName PresentationCore, PresentationFramework
 
 #Check AppCenter Register Key
-If(!(Test-Path HKLM:\SOFTWARE\AppCenter)) {
-     New-Item -Path HKLM:\SOFTWARE -Name AppCenter -ItemType Directory 
+If (!(Test-Path HKLM:\SOFTWARE\AppCenter)) {
+    New-Item -Path HKLM:\SOFTWARE -Name AppCenter -ItemType Directory 
 }
 
 #Import Software Versions Data Base
@@ -63,9 +63,20 @@ $listBox.location = New-Object System.Drawing.Point(20, 160)
 $listBox.Size = New-Object System.Drawing.Size(200, 180) 
 $listBox.Font = $FontListBox
 foreach ($Software in $Softwares) {    
-        if (!(Test-Path -Path HKLM:\SOFTWARE\AppCenter\$($Software.BaseName))) {
-            [void] $listBox.Items.Add("$($software.BaseName)")
-        }    
+    if (!(Test-Path -Path HKLM:\SOFTWARE\AppCenter\$($Software.BaseName))) {
+        [void] $listBox.Items.Add($($Software.BaseName))
+    }
+        else {
+            foreach ($DBVersion in $VersionDB_Field) {
+                if ($DBVersion.Software -match $($Software.BaseName)) {
+                    $AppVersion = $DBVersion.Version
+                }
+        $RegVersion = Get-ItemProperty -Path HKLM:\SOFTWARE\AppCenter\$($Software.BaseName)
+            if ($AppVersion -notmatch $RegVersion.Version) {
+                [void] $listBox.Items.Add($($Software.BaseName))
+            }
+        }
+    }
 }
 
 #InstallButton
@@ -152,21 +163,21 @@ do {
         $App = $listBox.SelectedItem            
         $ConfirmBody += "$($App)?"
         $ConfirmAction = [System.Windows.MessageBox]::Show($ConfirmBody, $ConfirmTitle, $ConfirmButtons, $ConfirmIcon)           
-            if ($ConfirmAction -eq 'Yes') {
-                foreach($DBVersion in $VersionDB_Field){
-                   if($DBVersion.Software -match $App) {
-                       $AppVersion = $DBVersion.Version
-                   }
+        if ($ConfirmAction -eq 'Yes') {
+            foreach ($DBVersion in $VersionDB_Field) {
+                if ($DBVersion.Software -match $App) {
+                    $AppVersion = $DBVersion.Version
                 }
-        $install = Start-Process -FilePath "$FilePath\$app.exe" -Credential $cred -Wait -PassThru
-           if($install.ExitCode -eq 0){
-              $success += "$($App)"
-              $SuccessMessage = [System.Windows.MessageBox]::Show($SuccessBody, $SuccessTitle, $SuccessButtons, $SuccessIcon)
-              New-Item -Path HKLM:\SOFTWARE\AppCenter -Name $App -ItemType Directory 
-              New-ItemProperty -Path HKLM:\SOFTWARE\AppCenter\$App -Name Version -PropertyType String -Value $AppVersion 
-              [void] $listBox.Items.Remove("$($software.BaseName)")
-           }                          
+            }
+            $install = Start-Process -FilePath "$FilePath\$app.exe" -Credential $cred -Wait -PassThru
+            if ($install.ExitCode -eq 0) {
+                $app += $success
+                $SuccessMessage = [System.Windows.MessageBox]::Show($SuccessBody, $SuccessTitle, $SuccessButtons, $SuccessIcon)
+                New-Item -Path HKLM:\SOFTWARE\AppCenter -Name $App -ItemType Directory -Force
+                New-ItemProperty -Path HKLM:\SOFTWARE\AppCenter\$App -Name Version -PropertyType String -Value $AppVersion -Force
+                [void] $listBox.Items.Remove("$($software.BaseName)")
+            }                          
         }
-           else {$ConfirmBody = $DefaultBody}
+        else {$ConfirmBody = $DefaultBody}
     }
 }Until($result -eq [System.Windows.Forms.DialogResult]::Cancel)
