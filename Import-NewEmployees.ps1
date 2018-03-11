@@ -39,7 +39,7 @@ $ConfirmIcon = [System.Windows.MessageBoxImage]::Question
 $SuccessIcon = [System.Windows.MessageBoxImage]::Information
 $ConfirmBody = @("Tem certeza que deseja instalar o software")
 $DefaultBody = @("Tem certeza que deseja instalar o software")
-$SuccessBody = @("A aplicacao $success foi instalado com exito!")
+$SuccessBody = @("A aplicacao $success foi instalada com exito!")
 
 #Software Directories
 $FilePath = '\\ITFDC01\AppCenter\Softwares\Field'
@@ -160,10 +160,11 @@ do {
                 }
         $install = Start-Process -FilePath "$FilePath\$app.exe" -Credential $cred -Wait -PassThru
            if($install.ExitCode -eq 0){
-              $success = $app
+              $success += "$($App)"
               $SuccessMessage = [System.Windows.MessageBox]::Show($SuccessBody, $SuccessTitle, $SuccessButtons, $SuccessIcon)
               New-Item -Path HKLM:\SOFTWARE\AppCenter -Name $App -ItemType Directory 
               New-ItemProperty -Path HKLM:\SOFTWARE\AppCenter\$App -Name Version -PropertyType String -Value $AppVersion 
+              [void] $listBox.Items.Remove("$($software.BaseName)")
            }                          
         }
            else {$ConfirmBody = $DefaultBody}
