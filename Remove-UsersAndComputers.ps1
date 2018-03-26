@@ -2,13 +2,10 @@ function Remove-UsersAndComputers {
   <#
   .SYNOPSIS
       Delete domain users and computers listed in a CSV file.
-  
   .PARAMETER CsvFile
       Path to CSV file.
-  
   .EXAMPLE
       Remove-UsersAndComputers -CsvFile c:\RemoveEmployees.csv 
-  
   .Notes
       The script will expect that CSV file contains domain usernames (not the employees names) and domain computer names.
       Also, the script will expect that domain computers descriptions contains the name of the username, then validate it before removing it. 
