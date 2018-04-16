@@ -1,3 +1,20 @@
+function OpenFileDialog {
+    param(
+        [string]$WindowTitle, 
+        [string]$InitialDirectory, 
+        [string]$Filter = "All files (*.*)|*.*"
+    )
+    
+    Add-Type -AssemblyName System.Windows.Forms
+    $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+    $OpenFileDialog.Title = $WindowTitle
+    $OpenFileDialog.InitialDirectory = $InitialDirectory     
+    $OpenFileDialog.Filter = $Filter    
+    $OpenFileDialog.ShowHelp = $true    
+    $OpenFileDialog.ShowDialog() > $null    
+    return $openFileDialog.Filename
+}
+
 function Remove-UsersAndComputers {
   <#
   .SYNOPSIS
@@ -11,8 +28,8 @@ function Remove-UsersAndComputers {
       Also, the script will expect that domain computers descriptions contains the name of the username, then validate it before removing it. 
   #>
 # Import CSV file data to $Employess
-[cmdletbinding()]
-  param($CsvFile)
+    
+  $CsvFile = OpenFileDialog -WindowTitle "Select the CSV file to delete users and computers" -InitialDirectory "C:\Users\Administrator\Documents\Powershell Scripts" -Filter *.csv
   $Employees = Import-CSV -Path $CsvFile
 
 # For each loop, pass the attributes of each employee to $UserParam and $ComputerParam 
@@ -23,10 +40,11 @@ function Remove-UsersAndComputers {
       $ComputerParam = @{
            'Identity' = $Employee.ComputerName
       }  
+
 # Try to find the username, if it doesn't exist throw the error message, instead, warn that username will be removed.
       try{    
         if(!(Get-ADUser -Filter 'SamAccountName -eq "$($Employee.UserName)"')){
-             Write-Error "Username $($Employee.UserName) doesn't exist"
+             Write-Error "Username $($Employee.UserName) doesn't exist."
              return         
         }
         else{
@@ -54,7 +72,7 @@ $computer = Get-ADComputer -filter 'name "$($Employee.ComputerName)"' -Propertie
 # If everything went fine, remove the user and the computer account, a warn message will prompt to confirm the action.
 # You might want to bypass this warning, if so, just add the [-confirm] parameter.     
      
-   Remove-ADUser @UserParam  # -confirm
-   Remove-ADComputer @ComputerParam # -confirm    
+   Remove-ADUser @UserParam -confirm
+   Remove-ADComputer @ComputerParam -confirm    
  }
 }
