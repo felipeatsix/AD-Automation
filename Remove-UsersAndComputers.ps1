@@ -1,78 +1,53 @@
-function OpenFileDialog {
-    param(
-        [string]$WindowTitle, 
-        [string]$InitialDirectory, 
-        [string]$Filter = "All files (*.*)|*.*"
-    )
-    
-    Add-Type -AssemblyName System.Windows.Forms
-    $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
-    $OpenFileDialog.Title = $WindowTitle
-    $OpenFileDialog.InitialDirectory = $InitialDirectory     
-    $OpenFileDialog.Filter = $Filter    
-    $OpenFileDialog.ShowHelp = $true    
-    $OpenFileDialog.ShowDialog() > $null    
-    return $openFileDialog.Filename
-}
-
 function Remove-UsersAndComputers {
   <#
   .SYNOPSIS
-      Delete domain users and computers listed in a CSV file.
+        Delete domain users and computers listed in a CSV file.
   .PARAMETER CsvFile
-      Path to CSV file.
+        Select a csv file by specifying it's path.        
   .EXAMPLE
-      Remove-UsersAndComputers -CsvFile c:\RemoveEmployees.csv 
+        Remove-UsersAndComputers -CsvFile .\FELIPETHEPOSHGUY\RemoveEmployees.csv 
   .Notes
-      The script will expect that CSV file contains domain usernames (not the employees names) and domain computer names.
-      Also, the script will expect that domain computers descriptions contains the name of the username, then validate it before removing it. 
+        The script will expect that CSV file contains domain usernames (not the employees names) and domain computer names.
+        Also, the script will expect that domain computers descriptions contains the name of the username, then validate it before removing it. 
   #>
-# Import CSV file data to $Employess
-    
-  $CsvFile = OpenFileDialog -WindowTitle "Select the CSV file to delete users and computers" -InitialDirectory "C:\Users\Administrator\Documents\Powershell Scripts" -Filter *.csv
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        $CsvFile
+    )
+
+  #Import CSV file data to $Employess        
   $Employees = Import-CSV -Path $CsvFile
 
-# For each loop, pass the attributes of each employee to $UserParam and $ComputerParam 
-  foreach($Employee in $Employees){      
-      $UserParam = @{
-           'Identity' = $Employee.Username
-      }
-      $ComputerParam = @{
-           'Identity' = $Employee.ComputerName
-      }  
-
-# Try to find the username, if it doesn't exist throw the error message, instead, warn that username will be removed.
-      try{    
-        if(!(Get-ADUser -Filter 'SamAccountName -eq "$($Employee.UserName)"')){
-             Write-Error "Username $($Employee.UserName) doesn't exist."
-             return         
+  #For each line of CSV content, pass it's attributes to $UserParam and $ComputerParam hashtables.
+    foreach($Employee in $Employees){      
+        $UserParam = @{
+            'Identity' = $Employee.Username
         }
-        else{
-          Write-Warning "Username $($Employee.Username) will be removed!"
-        }        
+        $ComputerParam = @{
+            'Identity' = $Employee.ComputerName
+        }  
 
-# Get the computer's description (which must be configured with the name of the username) and compare it with the username.
-# if it does not match, throw error message, if it does, warn that computer account will be removed.
+      #Try to find the username, if it doesn't exist throw the error message, instead, warn that username will be removed.
+        try{    
+            if(!(Get-ADUser -Filter "SamAccountName -eq '$($Employee.UserName)'")){
+                Write-Error "Username $($Employee.UserName) doesn't exist."
+                return         
+            }
+            else{
+                Write-Warning "Username $($Employee.Username) will be removed!"
+            }        
+ 
+        #Catch errors and throw the script line which the error has occurred. 
+        } 
+        catch{
+            Write-Error "$($_.Exception.Message) : - Line Number : $($_.InvocationInfo.ScriptLineNumber)"
+        }             
 
-$computer = Get-ADComputer -filter 'name "$($Employee.ComputerName)"' -Properties description             
-  
-  if($computer.description -match $Employee.UserName){
-     Write-Warning "The computer $($Employee.ComputerName) matches with $($Employee.Username) and will be removed!`n"
-  }
-     else{
-       Write-Error "ATTENTION: The description of $($Employee.ComputerName) does not match with username $($Employee.UserName)!`n"
-       return
-     }     
- } 
-   # Catch errors and throw the script line which the error has occurred. 
-   catch{
-     Write-Error "$($_.Exception.Message) : - Line Number : $($_.InvocationInfo.ScriptLineNumber)"
-   }             
-
-# If everything went fine, remove the user and the computer account, a warn message will prompt to confirm the action.
-# You might want to bypass this warning, if so, just add the [-confirm] parameter.     
+        #If everything went fine, remove the user and the computer account, a warn message will prompt to confirm the action.
+        #You might want to bypass this warning, if so, just add the [-confirm] parameter.     
      
-   Remove-ADUser @UserParam -confirm
-   Remove-ADComputer @ComputerParam -confirm    
- }
-}
+        Remove-ADUser @UserParam -confirm
+        Remove-ADComputer @ComputerParam -confirm
+    }
+}       
