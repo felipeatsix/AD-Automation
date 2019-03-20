@@ -1,4 +1,4 @@
-function NewADUser {
+function New-MyADUser {
     <#
   .SYNOPSIS
        This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
