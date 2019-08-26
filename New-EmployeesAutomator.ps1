@@ -1,40 +1,26 @@
-function NewADUser {
-    <#
-  .SYNOPSIS
-       This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
-       tasks that must be done when onboarding a new employee user account.
-        
-  .EXAMPLE
-      PS> NewADUser -firstname 'Felipe' -MiddleName 'Souza' -LastName 'Santos' -Title 'Powershell Scripter' -Group 'Powershell Guys'
+function New-ADUser {
+<#
+    .SYNOPSIS
+        This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
+        tasks that must be done when onboarding a new employee user account.        
+    .EXAMPLE
+        PS> NewADUser -firstname 'Felipe' -MiddleName 'Souza' -LastName 'Santos' -Title 'Powershell Scripter' -Group 'Powershell Guys'
 
-      This example creates an AD username based on company standards into a company-standard OU and adds the user
-      into the company-standard main user group.      
-      
-      Notes: 
-        -MiddleName and -Group parameters are not mandatory.
-         Use the -Group parameter only to add the user to a specific domain group. 
-  
-  .PARAMETER FirstName
-       Set the user's First Name.
-  
-  .PARAMETER MiddleName
-       Set the user's Middle Name.
-  
-  .PARAMETER LastName
-       Set the user's Last Name.
-  
-  .PARAMETER Title
-       Set the user's Title.
-  
-  .PARAMETER Group 
-       Adds the user to a specific domain group.            
+        This example creates an AD Username based on company standards into a company-standard OU and adds the user
+        into the company-standard main user group.            
+    .PARAMETER FirstName
+        Set the user's First Name.  
+    .PARAMETER MiddleName
+        Set the user's Middle Name.  
+    .PARAMETER LastName
+        Set the user's Last Name.
+    .PARAMETER Title
+        Set the user's Title.  
+    .PARAMETER Group 
+        Adds the user to a specific domain group.
 #> 
-
-#Parameters------------------------------------------------------------------------------------------------------- 
-
-[cmdletbinding()]
-    param
-    (     
+    [cmdletbinding()]
+    Param(     
         [parameter(Mandatory = $true)]
         $FirstName,  
         [parameter(Mandatory = $false)]
@@ -46,222 +32,159 @@ function NewADUser {
         [parameter(Mandatory = $false)]
         $Group   
     )
-
-#Constant Parameters----------------------------------------------------------------------------------------------
-
-    process {
-            if ($MiddleName) {
-                $MiddleInitial = ".$($MiddleName.Substring(0, 1).Tolower())"
-            }
+    Process {
+        if ($MiddleName) {
+            $MiddleInitial = ".$($MiddleName.Substring(0, 1).Tolower())"
+        }
         $FirstName = $($FirstName.ToLower())
         $LastName = $($LastName.ToLower())  
         $DomainDn = (Get-ADDomain).DistinguishedName
         $Location = 'OU=Domain Users,OU=ITFLEE'
         $DefaultPassword = 'p@ssw0rd'
         $DefaultGroup = 'ITFLEE Users'
+        $Username = "$firstName.$lastName"
 
-#Test username availability---------------------------------------------------------------------------------------
-
-$username = "$firstName.$lastName"
-
-    try {
-        if (Get-ADUser -filter * | ? {$_.name -eq $username}) {
-            $username = "$($FirstName.substring(0,1))$MiddleInitial$LastName"    
-            if (Get-ADUser -filter * | ? {$_.name -eq $username}) {
-                Write-Warning "No acceptable username schema could be created!"
-                return     
-            }  
-        }
-    }  
-    catch {
-        Write-Error "$($_.Execption.Message) - Line Number : $($_.InvocationInfo.ScriptLineNumber)"
-    }        
-
-#Set new user parameters and create it----------------------------------------------------------------------------
-
-$NewUserParams = @{
-
-    'UserPrincipalName'     = $username
-    'Name'                  = $username
-    'GivenName'             = $FirstName
-    'Surname'               = $LastName
-    'Title'                 = $Title
-    'SamAccountName'        = $username
-    'AccountPassword'       = (ConvertTo-SecureString $DefaultPassword -AsPlainText -force)
-    'Enabled'               = $true
-    'Path'                  = "$location,$DomainDn"
-    'ChangePassWordAtLogon' = $true  
-}
-
-#If user has a middle name, then add the middle initial name to the parameter 'Initials'.
-
-if ($MiddleInitial) {
-    $NewUserParams += @{'Initials' = $MiddleInitial}
-}
-    New-ADUser @NewUserParams 
-
-#Add new user to default group and specific group-----------------------------------------------------------------
-
-Add-ADGroupMember -Identity $DefaultGroup -Members $username
-    if ($group -ne $null) {
         try {
-            Add-ADGroupMember -Identity $Group -Members $username 
-        }
-        catch {
-            Write-Error "The group $group does not exist."
-        }
-    }
-    
-#Show Results-----------------------------------------------------------------------------------------------------
+            if (Get-ADUser -filter * | Where-Object {$_.name -eq $Username}) {
+                $Username = "$($FirstName.substring(0,1))$MiddleInitial$LastName"    
+                if (Get-ADUser -filter * | Where-Object {$_.name -eq $Username}) {
+                    Write-Warning "No acceptable Username schema could be created!"
+                    return     
+                }  
+            }
+        }  
+        catch { Write-Error "$($_.Execption.Message) - Line Number : $($_.InvocationInfo.ScriptLineNumber)" }        
 
-Write-Host "
-A new Active Directory user account has been created:`n
-Username = $username
-Name = $FirstName
-Middle Name = $MiddleName
-Last Name = $LastName
-Title = $Title
-Default Group = $DefaultGroup
-Specific Group = $Group
-Location = $Location,$DomainDn" -ForegroundColor Cyan 
-        $username  
+        $NewUserParams = @{
+            'UserPrincipalName'     = $Username
+            'Name'                  = $Username
+            'GivenName'             = $FirstName
+            'Surname'               = $LastName
+            'Title'                 = $Title
+            'SamAccountName'        = $Username
+            'AccountPassword'       = (ConvertTo-SecureString $DefaultPassword -AsPlainText -force)
+            'Enabled'               = $true
+            'Path'                  = "$location,$DomainDn"
+            'ChangePassWordAtLogon' = $true  
+        }
+        # If user has a middle name, then add the middle initial name to the parameter 'Initials'.
+        if ($MiddleInitial) { $NewUserParams += @{'Initials' = $MiddleInitial} } ; New-ADUser @NewUserParams 
+        
+        #Add new user to default group and specific group
+        Add-ADGroupMember -Identity $DefaultGroup -Members $Username
+        
+        if ($null -ne $group) {            
+            try { Add-ADGroupMember -Identity $Group -Members $Username }
+            catch { Write-Error "The group $group does not exist." }
+        }
+
+        #Show Results
+
+        Write-Host "A new Active Directory user account has been created:" -ForegroundColor Cyan
+        $Obj = @{
+            'Username' = $Username
+            'Name' = $FirstName
+            'Middle Name' = $MiddleName
+            'Last Name' = $LastName
+            'Title' = $Title
+            'Default Group' = $DefaultGroup
+            'Specific Group' = $Group
+            'Location' = @($Location,$DomainDn)                         
+        }
+        Write-Output $Obj  
     }
 }
-
-function newADComputer {
+function New-ADComputer {
     <#
-   .SYNOPSIS
-       This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
-       tasks that must be done when onboarding a new employee user account.
-
-   .Example
-       newADComputer -Computername [computername]
-#>
-
-[cmdletbinding()]param 
-    (
+        .SYNOPSIS
+        This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
+        tasks that must be done when onboarding a new employee user account.
+        .Example
+        newADComputer -Computername [computername]
+    #>
+    [cmdletbinding()]
+    Param(
         [parameter(Mandatory = $true)]
         $Computername,   
         $Location = 'OU=Domain Computers,OU=ITFLEE'
     )  
+    Process {
 
-process {
-    $DomainDn = (Get-ADDomain).DistinguishedName
-    $DefaultOuPath = "$Location,$DomainDn"
+        $DomainDn = (Get-ADDomain).DistinguishedName
+        $DefaultOuPath = "$Location,$DomainDn"        
+        
+        Try {
+            if (Get-ADComputer $Computername) {    
+                Write-Error "The computer name '$Computername' already exists"    
+                exit
+            }
+        } 
+        Catch { Write-Error "$($_.Execption.Message) - Line Number : $($_.InvocationInfo.ScriptLineNumber)" }
 
-#Test hostname availability--------------------------------------------------------------------
-
-    try {
-        if (Get-ADComputer $Computername) {    
-            Write-Error "The computer name '$Computername' already exists"    
-            exit
+        New-ADComputer -Name $Computername -Path "$DefaultOuPath"
+        Write-host "A new Active Directory computer has been created:" -ForegroundColor Cyan        
+        $Obj = @{
+            Hostname =  $Computername
+            Location = @($Location,$DomainDn)
         }
-    } 
-    catch {
-        Write-Error "$($_.Execption.Message) - Line Number : $($_.InvocationInfo.ScriptLineNumber)"
-    }
-
-#Create new AD computer------------------------------------------------------------------------
-
-New-ADComputer -Name $Computername -Path "$DefaultOuPath"
-
-#Show Results----------------------------------------------------------------------------------
-
-Write-host "
-A new Active Directory computer has been created:`n
-Hostname: $Computername
-Location: $Location,$DomainDn
-" -ForegroundColor Cyan
+        Write-Output $Obj        
     }
 }
 
 function Set-MyADcomputer {
-
     <#
-   .SYNOPSIS
-       This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
-       tasks that must be done when onboarding a new employee user account.
-
-   .Example 
-      cd [script location]
-      Set-MyADcomputer -computername [ComputerName] -Attributes @{key = 'value'; key = 'value'}
-
-      NOTE: The 'keys' are the Set-ADComputer cmdlet parameters, you can use intellisense to discover all parameters of this cmdlet.   
-
-   .Example2:            
-     Set-MyADcomputer -computername VM01 -Attributes @{description = 'Lab - Virtual Machine'; displayname = 'VM01'}
-#>
-
-[cmdletbinding()]
-    param
-    (
-        [string]$computername,
+        .SYNOPSIS
+        This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
+        tasks that must be done when onboarding a new employee user account.
+        .Example 
+        cd [script location]
+        Set-MyADcomputer -computername [ComputerName] -Attributes @{key = 'value'; key = 'value'}
+        .Example2:            
+        Set-MyADcomputer -computername VM01 -Attributes @{description = 'Lab - Virtual Machine'; displayname = 'VM01'}
+    #>
+    [cmdletbinding()]
+    Param(
+        [string]$Computername,
         [hashtable]$Attributes
     )
-
-# Attempt to find the computername
-process {
-        try {
-# If the computername ins't found thow an error and exit
-            $computer = Get-ADComputer -Identity $computername
-                if (!$computer) {
-                    Write-Output "The computername '$computername' does not exist"
-                    return
-                }
-        }
-        catch {
-            Write-Error "$($_.Exception.Message) - Line Number $($_.InvocationInfo.ScriptLineNumber)"
-        }
-
-# The $attributes parameter will contain only the parameters for the Set-AdComputer cmdlet
-
-        $computer | Set-ADComputer @Attributes
+    Try { 
+        If (!($Computer = Get-ADComputer -Identity $computername)) { Throw } 
+    }       
+    Catch { 
+        Write-Warning "The computer $computername could not be found!"
+        Break; 
     }
+    $Computer | Set-ADComputer @Attributes   
 }
 
 function Set-MyAdUser {
     <# 
-   .SYNOPSIS
-   This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
-   tasks that must be done when onboarding a new employee user account.
-
-   .Example    
-      Set-MyAdUser -username [username] -attributes @{key = 'key value'}  
-      
-      NOTE: The 'keys' are the Set-ADUser cmdlet parameters, you can use intellisense to discover all parameters of this cmdlet. 
-
-   Example2:
-      Set-MyAdUser -username [username] -attributes @{GivenName = 'Tony'; Surname = 'Stark'; Initials = 'TS'}
-#>        
-
-[cmdletbinding()]
-    param
-    (
-        [string]$username,
-        [hashtable]$attributes
-    )
-
-# Attempt to find the username
-process { 
+        .SYNOPSIS
+        This function is part of the Active Directory Account Management Automator Tool. It is used to perform all routine
+        tasks that must be done when onboarding a new employee user account.
+        .Example    
+        Set-MyAdUser -Username [Username] -attributes @{key = 'key value'}  
+        NOTE: The 'keys' are the Set-ADUser cmdlet parameters, you can use intellisense to discover all parameters of this cmdlet. 
+        Example2:
+        Set-MyAdUser -Username [Username] -attributes @{GivenName = 'Tony'; Surname = 'Stark'; Initials = 'TS'}
+    #>        
+    [cmdletbinding()]
+    Param(
+        [string]$Username,
+        [hashtable]$Attributes
+    )    
+    Process { 
         Try {
-            $useraccount = Get-ADUser $username
-                if (!$useraccount) {
-                    Write-Error "The username '$username' does not exist"
-                    return
-                } 
+            If (!($UserAccount = Get-ADUser $Username)) { Throw }
         } 
         catch {
-            Write-Error "$($_.Exception.Message) - Line Number $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Error "The Username $Username does not exist"
+            Break;
         }
-
-# The $attributes parameter will contain only the parameters for the Set-AdUser cmdlet other than
-# Password. If this is in $attributes it needs to be threated differentely. 
-
-        if ($attributes.ContainsKey('Password')) {
-            $Useraccount | Set-ADAccountPassword -Reset -NewPassword (ConvertTo-SecureString -AsPlainText $attributes.Password -Force)
-            # Remove the password key because we'll be passing this hashtable to Set-AdUser later.  
-            $attributes.Remove('Password')
+        If ($attributes.ContainsKey('Password')) {
+            $Useraccount | Set-ADAccountPassword -Reset -NewPassword (ConvertTo-SecureString -AsPlainText $attributes.Password -Force)            
+            $Attributes.Remove('Password')
         }
-        $useraccount | Set-ADUser @attributes
+        $Useraccount | Set-ADUser @attributes
     }
 }
